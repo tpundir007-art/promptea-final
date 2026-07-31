@@ -12,7 +12,7 @@ User Level:
 {state["level"]}
 
 Original Prompt:
-{state["user_prompt"]}
+{state["original_prompt"]}
 
 Selected Techniques:
 {", ".join(state["selected_techniques"])}
@@ -21,7 +21,7 @@ Strategy:
 {state["strategy"]}
 
 Refined Prompt:
-{state["draft_prompt"]}
+{state["refined_prompt"]}
 
 Critique:
 {state["critique"]}

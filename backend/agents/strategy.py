@@ -9,7 +9,7 @@ Detected Techniques:
 {", ".join(state["selected_techniques"])}
 
 Original Prompt:
-{state["user_prompt"]}
+{state["original_prompt"]}
 """
 
     state["strategy"] = ask_llm_json(

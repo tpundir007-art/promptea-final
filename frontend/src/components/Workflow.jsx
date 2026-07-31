@@ -1,75 +1,35 @@
 import "./Workflow.css";
 
 const agents = [
-  {
-    id: 1,
-    name: "Strategy",
-    icon: "🧠",
-    color: "#A7C7E4",
-  },
-  {
-    id: 2,
-    name: "Technique",
-    icon: "🎯",
-    color: "#F6C94D",
-  },
-  {
-    id: 3,
-    name: "Refiner",
-    icon: "✨",
-    color: "#F29BB9",
-  },
-  {
-    id: 4,
-    name: "Critic",
-    icon: "🔍",
-    color: "#E45688",
-  },
-  {
-    id: 5,
-    name: "Scorecard",
-    icon: "📊",
-    color: "#5D7B3D",
-  },
-  {
-    id: 6,
-    name: "Explain",
-    icon: "🫖",
-    color: "#0C6038",
-  },
+  ["Validation","Checking the prompt","✓","#5D7B3D"],
+  ["Complexity","Measuring the brew","◈","#A7C7E4"],
+  ["Gap Analysis","Finding missing ingredients","⌕","#F6C94D"],
+  ["Context","Understanding intent","◌","#F29BB9"],
+  ["Technique","Choosing the tools","✦","#F6C94D"],
+  ["Strategy","Writing the recipe","♟","#A7C7E4"],
+  ["Refiner","Improving the prompt","✧","#F29BB9"],
+  ["Critic","Tasting the result","⌕","#E45688"],
+  ["Cost Optimizer","Trimming the tokens","◫","#5D7B3D"],
+  ["Simulator","Taking a test sip","◇","#A7C7E4"],
+  ["Scorecard","Scoring the cup","★","#F6C94D"],
+  ["Explainability","Writing tea notes","🫖","#0C6038"],
 ];
 
-function Workflow({ activeStep = 0 }) {
-  return (
-    <div className="workflow-container">
-      <h2 className="workflow-title">Brewing Process ☕</h2>
-
-      <div className="workflow">
-        {agents.map((agent, index) => (
-          <div className="workflow-item" key={agent.id}>
-            <div
-              className={`workflow-card ${
-                activeStep === agent.id ? "active" : ""
-              }`}
-            >
-              <div
-                className="workflow-icon"
-                style={{ backgroundColor: agent.color }}
-              >
-                {agent.icon}
-              </div>
-
-              <p>{agent.name}</p>
-            </div>
-
-            {index !== agents.length - 1 && (
-              <div className="workflow-line"></div>
-            )}
+export default function Workflow({ activeStep=0, paused=false }) {
+  return <section className="workflow-container">
+    <div className="workflow-heading"><span>⌁</span><div><p className="workflow-eyebrow">THE KITCHEN</p><h2>Brewing your prompt</h2><p>Every station has a job.</p></div><span>⌁</span></div>
+    <div className="workflow">
+      {agents.map(([name,desc,icon,color],i)=>{
+        const step=i+1, completed=activeStep>step, active=activeStep===step;
+        return <div className="workflow-item" key={name}>
+          <div className={`workflow-card ${active?"active":""} ${completed?"completed":""} ${activeStep<step?"waiting":""}`}>
+            <div className="workflow-icon" style={{"--agent-color":color}}>{completed?"✓":icon}{active&&<i/>}</div>
+            <div><span className="workflow-number">{String(step).padStart(2,"0")}</span><p>{name}</p><small>{completed?"Complete":active?desc:"Waiting"}</small></div>
           </div>
-        ))}
-      </div>
+          {i<agents.length-1&&<div className={`workflow-line ${completed?"line-completed":""}`}/>}
+        </div>
+      })}
     </div>
-  );
+    <div className="workflow-footer"><span className="brewing-dot"/>{paused?"A detail is needed before the next station.":activeStep>=12?"The cup is ready.":"Steeping your prompt..."}</div>
+  </section>;
 }
-
-export default Workflow;

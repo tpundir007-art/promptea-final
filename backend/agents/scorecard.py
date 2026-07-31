@@ -9,10 +9,10 @@ def scorecard_agent(state):
 
     user_message = f"""
 Original Prompt:
-{state["user_prompt"]}
+{state["original_prompt"]}
 
 Refined Prompt:
-{state["draft_prompt"]}
+{state["refined_prompt"]}
 
 Critique:
 {state["critique"]}

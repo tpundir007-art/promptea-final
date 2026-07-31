@@ -1,32 +1,15 @@
 import "./Explainability.css";
 
-function Explainability({ explanations = [] }) {
-  return (
-    <div className="explainability-card">
-      <div className="explainability-header">
-        <span className="header-icon">🫖</span>
-        <div>
-          <h2>Tea Notes</h2>
-          <p>Here's how your prompt was refined.</p>
-        </div>
-      </div>
-
-      {explanations.length === 0 ? (
-        <div className="empty-state">
-          <p>No refinements yet.</p>
-        </div>
-      ) : (
-        <div className="notes-container">
-          {explanations.map((item, index) => (
-            <div className="note" key={index}>
-              <span className="note-icon">🌸</span>
-              <p>{item}</p>
-            </div>
-          ))}
-        </div>
-      )}
+export default function Explainability({ explanation = {} }) {
+  if (!explanation || !Object.keys(explanation).length) return null;
+  const techniques = explanation.techniques_used || [];
+  return <section className="tea-notes result-section">
+    <div className="tea-paper">
+      <div className="tea-header"><span>🫖</span><div><p className="section-eyebrow">TEA NOTES</p><h2>Here's how your prompt was refined.</h2></div></div>
+      {explanation.summary && <div className="tea-block"><h3>🌸 Summary</h3><p>{explanation.summary}</p></div>}
+      {explanation.major_improvements?.length ? <div className="tea-block"><h3>🌸 Major Improvements</h3><ul>{explanation.major_improvements.map((x,i)=><li key={i}>{x}</li>)}</ul></div>:null}
+      {techniques.length ? <div className="tea-block"><h3>🎯 Techniques Used</h3><div className="tea-techniques">{techniques.map((t,i)=><div key={i}><strong>{t.technique || t.name}</strong><span>{t.purpose || t.description || ""}</span></div>)}</div></div>:null}
+      {explanation.overall_assessment && <div className="tea-block tea-final"><h3>☕ Barista's Note</h3><p>{explanation.overall_assessment}</p></div>}
     </div>
-  );
+  </section>;
 }
-
-export default Explainability;
