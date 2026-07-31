@@ -477,6 +477,7 @@ The Vite development server will provide the frontend URL in the terminal.
 
 ---
 
+
 ## 🔐 Environment Variables
 
 PrompTea requires a Groq API key.
@@ -535,19 +536,11 @@ A typical PrompTea session looks like:
 
 ---
 
-## 🌐 Live Project
+## 🌐 Live Demo
 
-### Live Demo
+🚀 **Try PrompTea:** https://prompteafinal.netlify.app/
 
-https://prompteagit.netlify.app/
-
-### Backend API
-
-https://promptea.onrender.com
-
-### GitHub Repository
-
-https://github.com/tpundir007-art/promptea
+⚙️ **Backend API:** https://promptea-final.onrender.com/
 
 ---
 
