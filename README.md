@@ -553,17 +553,37 @@ https://github.com/tpundir007-art/promptea
 
 ## 📸 Screenshots
 
-### Home Page
+## 📸 Screenshots
 
+### 🏠 Home
 ![Home](frontend/src/screenshots/home.png)
 
-### Brew Page
+### ✍️ Prompt Input
+![Prompt](frontend/src/screenshots/prompt.png)
 
-![Brew](frontend/src/screenshots/brew1.png)
+### 🫖 Kitchen — Agentic Workflow
+![Kitchen](frontend/src/screenshots/kitchen.png)
 
-![Brew](frontend/src/screenshots/brew2.png)
+### ✨ Refined Prompt
+![Refined Prompt](frontend/src/screenshots/refine.png)
 
-![Brew](frontend/src/screenshots/brew3.png)
+### 🎯 Technique Selection
+![Techniques](frontend/src/screenshots/technique.png)
+
+### 🔍 Critic
+![Critic](frontend/src/screenshots/critic.png)
+
+### 📊 Scorecard
+![Scorecard](frontend/src/screenshots/scorecard.png)
+
+### 💰 Cost Optimization
+![Cost Optimizer](frontend/src/screenshots/cost.png)
+
+### 🧪 Simulator
+![Simulator](frontend/src/screenshots/simulator.png)
+
+### 🫖 Tea Notes
+![Tea Notes](frontend/src/screenshots/teanotes.png)
 
 ### History
 
