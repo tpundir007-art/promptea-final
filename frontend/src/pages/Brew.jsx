@@ -38,6 +38,10 @@ export default function Brew() {
   const [error,setError]=useState("");
   const [sound,setSound]=useState(true);
   const timer=useRef(null);
+  // Remembers the personalization used for the most recent brew, so
+  // "Try another prompt" (retry) can reuse the same preferences instead
+  // of silently dropping them.
+  const lastPersonalization=useRef({presets:[],custom:""});
 
   const stop=()=>{if(timer.current){clearInterval(timer.current);timer.current=null;}};
   useEffect(()=>()=>stop(),[]);
@@ -58,9 +62,10 @@ export default function Brew() {
     timer.current=setInterval(()=>{n+=1;if(n>=until){stop();setActiveStep(until);return;}setActiveStep(n);},420);
   };
 
-  const normalize=(data,promptText)=>{
+  const normalize=(data,promptText,personalization)=>{
     return {
       id:Date.now(),originalPrompt:promptText,level,skill:selectedSkill,
+      personalization:personalization||{presets:[],custom:""},
       validation:obj(data.validation),complexity:obj(data.complexity),gap:obj(data.gap),answers:data.answers||{},
       context:obj(data.context),selectedTechniques:Array.isArray(data.selected_techniques)?data.selected_techniques:[],
       techniqueReasoning:obj(data.technique_reasoning) || data.technique_reasoning || "",
@@ -78,28 +83,34 @@ export default function Brew() {
     }catch{}
   };
 
-  const callGenerate=async(promptText)=>{
-    const response=await fetch(`${API}/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:promptText.trim(),level})});
+  const callGenerate=async(promptText,personalization)=>{
+    const response=await fetch(`${API}/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      prompt:promptText.trim(),
+      level,
+      personalization_presets:personalization?.presets||[],
+      personalization_custom:personalization?.custom||"",
+    })});
     const type=response.headers.get("content-type")||"";
     const data=type.includes("application/json")?await response.json():{error:"The brewing service returned a webpage instead of JSON. It may be waking up or temporarily unavailable."};
     if(!response.ok)throw new Error(errorMessage(response,data));
     return data;
   };
 
-  const handleBrew=async(promptText)=>{
+  const handleBrew=async(promptText,personalization={presets:[],custom:""})=>{
     if(!promptText?.trim()||loading)return;
+    lastPersonalization.current=personalization;
     setLoading(true);setError("");setResult(null);setPending(null);animate(3);
     try{
-      const data=await callGenerate(promptText);
+      const data=await callGenerate(promptText,personalization);
       if(data.needs_clarification){
-        stop();setActiveStep(3);setPending({gap:data.gap,state:data.pending_state,prompt:promptText});
+        stop();setActiveStep(3);setPending({gap:data.gap,state:data.pending_state,prompt:promptText,personalization});
         setLoading(false);return;
       }
       if(data.status==="complete"){
         stop();setActiveStep(TOTAL_STEPS);
-        const item=normalize(data,promptText.trim());setResult(item);saveHistory(item);playCupSound();
+        const item=normalize(data,promptText.trim(),personalization);setResult(item);saveHistory(item);playCupSound();
       }else if(data.validation?.continue_pipeline===false){
-        stop();setActiveStep(1);setResult(normalize(data,promptText.trim()));
+        stop();setActiveStep(1);setResult(normalize(data,promptText.trim(),personalization));
       }else throw new Error(data.error||"PrompTea couldn't finish this brew.");
     }catch(e){stop();setActiveStep(0);setError(e.message||"The kettle went a little cold.");}
     finally{setLoading(false);}
@@ -114,12 +125,12 @@ export default function Brew() {
       const data=type.includes("application/json")?await response.json():{error:"The continuation service returned an unexpected response."};
       if(!response.ok)throw new Error(errorMessage(response,data));
       stop();setActiveStep(TOTAL_STEPS);
-      const item=normalize(data,pending.prompt);setResult(item);saveHistory(item);playCupSound();
+      const item=normalize(data,pending.prompt,pending.personalization);setResult(item);saveHistory(item);playCupSound();
     }catch(e){setError(e.message||"I couldn't continue the brew.");}
     finally{setLoading(false);}
   };
 
-  const retry=()=>{if(result?.originalPrompt)handleBrew(result.originalPrompt);};
+  const retry=()=>{if(result?.originalPrompt)handleBrew(result.originalPrompt,lastPersonalization.current);};
 
   return <main className="brew-page">
     <section className="brew-hero">

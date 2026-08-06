@@ -1,15 +1,30 @@
 import { useState } from "react";
 import "./PromptInput.css";
+import PersonalizeModal from "./PersonalizeModal";
 
 function PromptInput({ onSubmit, onSkillClick, loading = false }) {
   const [prompt, setPrompt] = useState("");
+  const [personalizeOpen, setPersonalizeOpen] = useState(false);
+  const [presets, setPresets] = useState([]);
+  const [customText, setCustomText] = useState("");
+
+  const togglePreset = (key) => {
+    setPresets((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const personalizeCount = presets.length + (customText.trim() ? 1 : 0);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!prompt.trim()) return;
 
-    onSubmit(prompt);
+    onSubmit(prompt, {
+      presets,
+      custom: customText.trim(),
+    });
   };
 
   return (
@@ -40,6 +55,14 @@ function PromptInput({ onSubmit, onSkillClick, loading = false }) {
             </button>
 
             <button
+              type="button"
+              className={`skill-btn ${personalizeCount ? "has-selection" : ""}`}
+              onClick={() => setPersonalizeOpen(true)}
+            >
+              🎨 Personalize{personalizeCount ? ` (${personalizeCount})` : ""}
+            </button>
+
+            <button
               type="submit"
               className="brew-btn"
               disabled={loading}
@@ -49,6 +72,15 @@ function PromptInput({ onSubmit, onSkillClick, loading = false }) {
           </div>
         </div>
       </form>
+
+      <PersonalizeModal
+        isOpen={personalizeOpen}
+        onClose={() => setPersonalizeOpen(false)}
+        selected={presets}
+        onToggle={togglePreset}
+        customText={customText}
+        onCustomTextChange={setCustomText}
+      />
     </div>
   );
 }
