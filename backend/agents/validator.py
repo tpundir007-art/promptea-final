@@ -1,4 +1,7 @@
 import re
+from unittest import result
+
+from click import prompt
 
 from helpers import ask_llm_json
 from prompts.validator_prompt import SYSTEM_PROMPT, USER_PROMPT
@@ -294,16 +297,45 @@ def validation_agent(state):
             "continue_pipeline": False,
         }
 
-    # -----------------------------------
-    # LLM handles everything else
-    # -----------------------------------
+   # -----------------------------------
+# LLM handles everything else
+# -----------------------------------
 
     result = ask_llm_json(
         SYSTEM_PROMPT,
-        USER_PROMPT.format(
-            user_prompt=prompt
-        )
+        USER_PROMPT.format(user_prompt=prompt)
     )
 
-    return result
+    # Override obvious educational/task requests
+    lower = prompt.lower().strip()
 
+    educational_prefixes = (
+        "what is",
+        "what are",
+        "who is",
+        "explain",
+        "describe",
+        "teach me",
+        "compare",
+        "summarize",
+        "summarise",
+        "translate",
+        "write",
+        "create",
+        "generate",
+        "review",
+        "analyze",
+        "analyse",
+        "debug",
+    )
+
+    if lower.startswith(educational_prefixes):
+        result["status"] = "VALID_PROMPT"
+        result["continue_pipeline"] = True
+        result["message"] = "Valid prompt detected. Proceeding to refinement."
+
+    print("\n===== VALIDATION RESULT =====")
+    print(result)
+    print("=============================\n")
+
+    return result

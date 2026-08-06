@@ -1,21 +1,51 @@
 from helpers import ask_llm_json
 from prompts.scorecard_prompt import SYSTEM_PROMPT
 
-
 def scorecard_agent(state):
     """
     Evaluates the quality of the refined prompt.
     """
 
     user_message = f"""
-Original Prompt:
-{state["original_prompt"]}
+================ ORIGINAL =================
+{state.get("original_prompt", "")}
 
-Refined Prompt:
-{state["refined_prompt"]}
+================ PERSONALIZATION =================
+{state.get("personalization", "")}
 
-Critique:
-{state["critique"]}
+================ COMPLEXITY =================
+{state.get("complexity", "")}
+
+================ GAP ANALYSIS =================
+{state.get("gap", "")}
+
+================ USER ANSWERS =================
+{state.get("answers", "")}
+
+================ CONTEXT =================
+{state.get("context", "")}
+
+================ TECHNIQUES =================
+Selected:
+{state.get("selected_techniques", "")}
+
+Reasoning:
+{state.get("technique_reasoning", "")}
+
+================ STRATEGY =================
+{state.get("strategy", "")}
+
+================ REFINED PROMPT =================
+{state.get("refined_prompt", "")}
+
+================ CRITIQUE =================
+{state.get("critique", "")}
+
+================ COST ANALYSIS =================
+{state.get("cost", "")}
+
+================ SIMULATION =================
+{state.get("simulator", "")}
 """
 
     state["score"] = ask_llm_json(
