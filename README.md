@@ -1,365 +1,496 @@
 # 🍵 PrompTea
 
-**PrompTea** is an AI-powered **Prompt Engineering Copilot** that transforms rough user ideas into structured, high-quality, production-ready prompts.
+> **Brew something brilliant.**  
+> Transform rough ideas into production-ready prompts using an intelligent multi-agent AI workflow.
 
-Built with **React, Flask, LangGraph, LangChain, and Groq**, PrompTea uses a multi-agent workflow to understand a user's intent, identify missing information, select suitable prompt engineering techniques, refine the prompt, critique the result, optimize it, simulate its expected output, score its quality, and explain the improvements.
+PrompTea is an **AI-powered Prompt Engineering Copilot** that refines rough user ideas into structured, high-quality prompts suitable for modern Large Language Models.
 
-> **Rough idea → Clarification → Analysis → Engineering → Refinement → Evaluation → Final Brew ☕**
+Unlike traditional prompt enhancers, PrompTea follows an **agentic workflow** where multiple specialized AI agents collaborate to analyze, clarify, engineer, evaluate, optimize, and explain every prompt before producing the final result.
 
----
+From the user's perspective, PrompTea behaves like an intelligent barista—
 
-## ✨ Features
-
-* 🤖 **Agentic Prompt Engineering Workflow**
-* 🔍 **Prompt Validation** to detect invalid, vague, casual, or unsafe inputs
-* 🧠 **Complexity Analysis** to determine task difficulty
-* ❓ **Information Gap Detection** to identify missing details
-* 💬 **Interactive Clarification** when important information is missing
-* 📝 **Context Extraction** using both the original prompt and user-provided answers
-* 🎯 **Prompt Engineering Technique Selection**
-* 🧠 **Strategy Generation** for the refinement process
-* ✨ **Automatic Prompt Refinement**
-* 🔍 **Critic Agent** with iterative refinement
-* 💰 **Cost Optimization** for token efficiency
-* 🧪 **Prompt Simulation** to predict output quality
-* 📊 **Prompt Quality Scorecard**
-* 💡 **Explainability** for every major refinement
-* 🗂️ **Local Prompt History**
-* 🌱 **Novice, Beginner, Intermediate, and Advanced Brewing Levels**
-* ⚡ **React + Flask architecture**
+> **Bring your rough idea to the counter, and we'll steep it into a prompt worth using. ☕**
 
 ---
 
-## 🏗️ Architecture
+# ✨ Features
+
+### 🤖 Agentic Prompt Engineering
+
+A complete multi-agent pipeline instead of a single LLM call.
+
+- Prompt Validation
+- Complexity Analysis
+- Gap Detection
+- Interactive Clarification
+- Context Building
+- Prompt Engineering Technique Selection
+- Strategy Generation
+- Prompt Refinement
+- Critic Loop
+- Cost Optimization
+- Prompt Simulation
+- Prompt Scorecard
+- Explainability
+
+---
+
+### 🔍 Smart Prompt Validation
+
+PrompTea intelligently classifies incoming prompts before refinement.
+
+It detects:
+
+- ✅ Valid prompts
+- 💬 Casual conversation
+- ❓ Vague prompts
+- ⚠️ Prompt injection attempts
+- 🧩 Gibberish
+- ➗ Simple mathematical expressions
+
+Educational prompts such as
+
+```
+What is Machine Learning?
+Explain DBMS.
+Teach me Graphs.
+```
+
+are correctly recognised as **valid prompts** and continue through the refinement pipeline.
+
+---
+
+### 🧠 Complexity Analysis
+
+The Complexity Agent evaluates:
+
+- Task type
+- Complexity level
+- Complexity score
+- Required reasoning depth
+- Whether clarification may be needed
+
+This helps later agents choose suitable prompt engineering strategies.
+
+---
+
+### ❓ Intelligent Gap Analysis
+
+Instead of guessing missing information, PrompTea identifies details that are important for producing a better prompt.
+
+Example:
+
+**User**
+
+```
+Write an email requesting a refund.
+```
+
+Gap Analysis detects questions such as:
+
+- What product?
+- Refund reason?
+- Desired tone?
+
+Rather than hallucinating answers, PrompTea pauses and asks the user.
+
+---
+
+### 💬 Interactive Clarification
+
+When important information is missing, PrompTea switches into an interactive clarification mode.
+
+Workflow:
+
+```
+User Prompt
+      ↓
+Gap Analysis
+      ↓
+Questions Generated
+      ↓
+Frontend Modal
+      ↓
+User Answers
+      ↓
+/continue API
+      ↓
+Remaining AI Agents
+```
+
+The user's responses are preserved and injected back into the workflow, ensuring prompts are refined using **real user input instead of assumptions**.
+
+---
+
+### 🎨 Personalization
+
+PrompTea allows users to customize the final prompt through reusable personalization presets.
+
+Available options include:
+
+- 📌 Include real-world examples
+- 📋 Bullet point formatting
+- 🪜 Step-by-step explanations
+- ✂️ Concise responses
+
+Users can also add their own custom personalization instructions.
+
+Example:
+
+```
+Use analogies wherever possible.
+```
+
+These personalization preferences are preserved throughout the entire refinement pipeline.
+
+---
+
+# ☕ Brewing Levels
+
+PrompTea supports multiple explanation levels.
+
+| Level | Intended User |
+|--------|---------------|
+| 🌱 Novice | Completely new to prompting |
+| 🌿 Beginner | Basic understanding |
+| 🌳 Intermediate | Comfortable using AI prompts |
+| 🍵 Advanced | Experienced prompt engineers |
+
+The selected level changes how later agents explain their decisions.
+
+---
+
+# 🏗️ Architecture
 
 PrompTea follows a staged agentic workflow.
 
-```text
-                         USER
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │   Validation  │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │   Complexity  │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │ Gap Analysis  │
-                  └───────┬───────┘
-                          │
-                  Missing information?
-                    ┌─────┴─────┐
-                    │           │
-                   YES          NO
-                    │           │
-                    ▼           │
-             User Clarification │
-                    │           │
-                    └─────┬─────┘
-                          ▼
-                  ┌───────────────┐
-                  │    Context    │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │   Technique   │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │    Strategy   │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │    Refiner    │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │     Critic    │◄──────┐
-                  └───────┬───────┘       │
-                          │                │
-                    Needs refinement?     │
-                       YES ────────────────┘
-                          │
-                         NO
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │ Cost Optimizer│
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │   Simulator   │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │   Scorecard   │
-                  └───────┬───────┘
-                          │
-                          ▼
-                  ┌───────────────┐
-                  │ Explainability│
-                  └───────┬───────┘
-                          │
-                          ▼
-                    ☕ FINAL BREW
+```
+                    USER
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Validation    │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Complexity    │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Gap Analysis  │
+              └───────┬───────┘
+                      │
+          Missing information?
+              ┌───────┴────────┐
+             YES              NO
+              │                │
+              ▼                │
+      Interactive Clarification│
+              │                │
+              └───────┬────────┘
+                      ▼
+              ┌───────────────┐
+              │ Context       │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Technique     │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Strategy      │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Refiner       │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Critic        │◄────────┐
+              └───────┬───────┘         │
+                      │                 │
+                Needs refinement?       │
+                 YES ───────────────────┘
+                      │
+                     NO
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Cost Optimizer│
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Simulator     │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Scorecard     │
+              └───────┬───────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │ Explainability│
+              └───────┬───────┘
+                      │
+                      ▼
+                 ☕ FINAL BREW
 ```
 
 ---
 
-## 🧩 Agent Workflow
+# 🧩 Agent Workflow
 
-### 1. Validation Agent
+## 1️⃣ Validation Agent
 
-Checks whether the submitted input is suitable for PrompTea.
+Determines whether the user's input should enter the pipeline.
 
-It can identify:
+Detects:
 
-* Empty input
-* Casual conversation
-* Gibberish
-* Direct queries
-* Very vague prompts
-* Prompt injection attempts
-* Valid prompts
+- Empty input
+- Casual chat
+- Gibberish
+- Prompt injection
+- Vague requests
+- Direct mathematical queries
+- Valid prompts
 
-Only valid prompts continue through the main pipeline.
-
----
-
-### 2. Complexity Agent
-
-Analyses the task and determines:
-
-* Task type
-* Complexity level
-* Complexity score
-* Reasoning requirements
-* Whether additional clarification may be necessary
+Only valid prompts proceed.
 
 ---
 
-### 3. Gap Analysis Agent
+## 2️⃣ Complexity Agent
 
-Identifies information that is **materially important** but missing from the prompt.
+Measures task complexity and reasoning requirements.
 
-For example:
+Outputs:
 
-```text
-User:
-"Write an email to Flipkart requesting a return."
+- Complexity score
+- Complexity level
+- Reasoning depth
+- Task type
 
-Gap Analysis:
-- What product is being returned?
-- What is the reason for the return?
-- What tone should the email use?
+---
+
+## 3️⃣ Gap Analysis Agent
+
+Identifies information that is materially missing.
+
+Instead of hallucinating:
+
+```
+Write an email.
 ```
 
-PrompTea can pause the workflow and ask the user for the missing information instead of blindly making assumptions.
+PrompTea asks questions first.
 
 ---
 
-### 4. Interactive Clarification
-
-When clarification is required:
-
-```text
-Backend
-   ↓
-Gap Questions
-   ↓
-Frontend Clarification Modal
-   ↓
-User Answers
-   ↓
-/continue
-   ↓
-Post-Gap Workflow
-```
-
-The answers are then passed into the Context Agent and used throughout the remaining workflow.
-
----
-
-### 5. Context Agent
+## 4️⃣ Context Agent
 
 Combines:
 
-* Original prompt
-* Complexity analysis
-* Gap analysis
-* User-provided clarification
+- Original prompt
+- Complexity analysis
+- Gap analysis
+- User clarification
+- Personalization settings
+- Brewing level
 
-to construct a reliable understanding of the task.
-
----
-
-### 6. Technique Selector
-
-Selects appropriate prompt engineering techniques based on the task.
-
-Examples include:
-
-* Context Expansion
-* Audience Specification
-* Output Formatting
-* Role Specification
-* Constraint Definition
-
-The agent also explains why each technique was selected.
+into a structured context package.
 
 ---
 
-### 7. Strategy Agent
+## 5️⃣ Technique Selection Agent
 
-Creates a refinement strategy describing how the prompt should be improved while preserving the user's original intent.
+Chooses prompt engineering techniques such as:
 
----
+- Context Expansion
+- Constraints
+- Output Formatting
+- Role Specification
+- Audience Specification
+- Few-shot prompting
+- Step-by-step reasoning
 
-### 8. Refiner Agent
-
-Generates the improved prompt using:
-
-* Original intent
-* Extracted context
-* Selected techniques
-* Refinement strategy
-* User clarification
+Each selected technique includes an explanation.
 
 ---
 
-### 9. Critic Agent
+## 6️⃣ Strategy Agent
 
-Reviews the refined prompt for quality.
+Produces a refinement strategy describing:
 
-The critic evaluates whether the prompt is ready or requires another refinement cycle.
+- how the prompt should change
+- what should remain unchanged
+- how assumptions should be avoided
 
-PrompTea supports iterative refinement:
+---
 
-```text
-Refiner
-   ↓
-Critic
-   │
-   ├── Accept → Continue
-   │
-   └── Refine → Refiner → Critic
+## 7️⃣ Refiner Agent
+
+Uses:
+
+- Context
+- Strategy
+- Techniques
+- User clarification
+- Personalization
+
+to generate the refined prompt.
+
+---
+
+## 8️⃣ Critic Agent
+
+Reviews the refined prompt.
+
+Possible outcomes:
+
+```
+Accept
 ```
 
-The retry loop is limited to prevent unnecessary iterations.
+or
+
+```
+Refine Again
+```
+
+PrompTea automatically retries refinement (up to three iterations) before continuing.
 
 ---
 
-### 10. Cost Optimizer
+## 9️⃣ Cost Optimizer
 
-Optimizes the final prompt for token efficiency while attempting to preserve its quality.
+After the prompt has been fully refined, PrompTea performs a final optimization pass to reduce unnecessary tokens while preserving quality.
 
-Depending on task complexity, PrompTea can use:
+Depending on the task complexity, one of three optimization modes is selected automatically:
 
-* Token Efficient
-* Balanced
-* Maximum Quality
+| Mode | Purpose |
+|------|---------|
+| ⚡ Token Efficient | Prioritizes fewer tokens while preserving intent |
+| ⚖️ Balanced | Maintains quality with moderate optimization |
+| 🌟 Maximum Quality | Preserves every useful instruction regardless of length |
 
-optimization strategies.
+The Cost Optimizer:
 
----
+- Removes redundant wording
+- Merges repetitive instructions
+- Simplifies phrasing
+- Preserves user intent
+- Never invents new requirements
+- Never removes important constraints
 
-### 11. Simulator
+It also reports:
 
-Provides a test prediction of what an AI system might produce from the optimized prompt.
-
-It reports:
-
-* Predicted quality
-* Confidence
-* Output preview
-* Strengths
-* Potential issues
-* Estimated output tokens
-* Recommendations
-
----
-
-### 12. Scorecard
-
-Evaluates the refined prompt across multiple dimensions:
-
-* Clarity
-* Specificity
-* Structure
-* Intent Preservation
-* Hallucination Safety
-* Strategy Adherence
-* Readiness
-
-An overall prompt quality score is also generated.
+- Estimated prompt tokens
+- Token reduction percentage
+- Quality preservation score
+- Summary of optimization changes
 
 ---
 
-### 13. Explainability Agent
+## 🔟 Simulator Agent
 
-Produces human-readable "Tea Notes" explaining:
+Before presenting the final prompt, PrompTea performs a simulated execution.
 
-* What changed
-* Why it changed
-* What worked
-* What could be improved
+Rather than actually solving the user's task, the Simulator predicts how another AI model is likely to respond.
 
-This makes PrompTea more than a prompt generator—it helps users understand **prompt engineering itself**.
+It estimates:
 
----
+- Predicted output quality
+- Confidence score
+- Expected output length
+- Output preview
+- Potential weaknesses
+- Recommendations
 
-## 🌱 Brewing Levels
-
-PrompTea supports four explanation levels:
-
-| Level           | Intended User                |
-| --------------- | ---------------------------- |
-| 🌱 Novice       | New to prompt engineering    |
-| 🌿 Beginner     | Basic understanding          |
-| 🌳 Intermediate | Comfortable with prompting   |
-| 🍵 Advanced     | Experienced prompt engineers |
-
-The selected level influences how PrompTea explains its decisions and refinements.
+This gives users an idea of how effective their refined prompt is before using it elsewhere.
 
 ---
 
-## 🛠️ Tech Stack
+## 1️⃣1️⃣ Scorecard Agent
+
+The Scorecard Agent objectively evaluates the quality of the refined prompt.
+
+Evaluation categories include:
+
+- Clarity
+- Specificity
+- Structure
+- Intent Preservation
+- Hallucination Safety
+- Strategy Adherence
+- Readiness
+
+An overall prompt quality score is generated along with:
+
+### ✅ What Worked
+
+Highlights the strongest aspects of the prompt.
+
+### 🔧 Could Be Stronger
+
+Suggests improvements without rewriting the prompt.
+
+This helps users understand **why** a prompt is considered high quality.
+
+---
+
+## 1️⃣2️⃣ Explainability Agent
+
+PrompTea doesn't just improve prompts—it teaches prompt engineering.
+
+The Explainability Agent generates "Tea Notes" that explain:
+
+- What changed
+- Why those changes were made
+- Which techniques were applied
+- How the refinement improved the prompt
+- Additional suggestions for future prompts
+
+This educational layer makes PrompTea valuable for both beginners and experienced users.
+
+---
+
+# 🛠️ Tech Stack
 
 ### Frontend
 
-* React
-* Vite
-* JavaScript
-* CSS
-* React Markdown
+- React
+- Vite
+- JavaScript
+- CSS
+- React Markdown
 
 ### Backend
 
-* Python
-* Flask
-* LangGraph
-* LangChain
-* LangChain-Groq
-* Groq API
+- Python
+- Flask
+- LangGraph
+- LangChain
+- LangChain-Groq
+- Groq API
+
+### AI Model
+
+- Llama 3.3 70B Versatile (Groq)
 
 ### Storage
 
-* Browser `localStorage` for prompt history
+- Browser Local Storage (Prompt History)
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
 ```text
 PROMPTEA
@@ -380,25 +511,33 @@ PROMPTEA
 │   │   └── explainability.py
 │   │
 │   ├── graph
-│   │   ├── state.py
-│   │   └── workflow.py
+│   │   ├── workflow.py
+│   │   └── state.py
 │   │
 │   ├── prompts
 │   │   ├── validator_prompt.py
 │   │   ├── gap_prompt.py
-│   │   └── ...
+│   │   ├── context_prompt.py
+│   │   ├── strategy_prompt.py
+│   │   ├── refiner_prompt.py
+│   │   ├── critic_prompt.py
+│   │   ├── cost_prompt.py
+│   │   ├── simulator_prompt.py
+│   │   ├── scorecard_prompt.py
+│   │   └── explainability_prompt.py
 │   │
 │   ├── app.py
-│   ├── config.py
 │   ├── helpers.py
+│   ├── config.py
 │   ├── requirements.txt
 │   └── .env
 │
 ├── frontend
 │   ├── src
-│   │   ├── assets
 │   │   ├── components
-│   │   └── pages
+│   │   ├── pages
+│   │   ├── assets
+│   │   └── styles
 │   │
 │   ├── package.json
 │   └── vite.config.js
@@ -407,13 +546,13 @@ PROMPTEA
 └── .gitignore
 ```
 
-> **Note:** `venv/` should not be committed to Git. Create it locally during setup.
+> **Note:** `venv/` should never be committed. Create it locally during setup.
 
 ---
 
-## 🚀 Installation
+# 🚀 Installation
 
-### 1. Clone the repository
+## 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
@@ -422,7 +561,7 @@ cd PROMPTEA
 
 ---
 
-### 2. Backend Setup
+## 2. Backend Setup
 
 Create a virtual environment:
 
@@ -430,9 +569,9 @@ Create a virtual environment:
 python -m venv venv
 ```
 
-Activate it on Windows:
+Activate it (Windows):
 
-```powershell
+```bash
 venv\Scripts\activate
 ```
 
@@ -449,7 +588,7 @@ Create a `.env` file inside `backend/`:
 GROQ_API_KEY=your_groq_api_key
 ```
 
-Start the Flask backend:
+Start the backend:
 
 ```bash
 python app.py
@@ -457,13 +596,13 @@ python app.py
 
 Backend:
 
-```text
+```
 http://127.0.0.1:5000
 ```
 
 ---
 
-### 3. Frontend Setup
+## 3. Frontend Setup
 
 Open another terminal:
 
@@ -473,78 +612,105 @@ npm install
 npm run dev
 ```
 
-The Vite development server will provide the frontend URL in the terminal.
+The Vite development server will provide the frontend URL.
 
 ---
 
-
-## 🔐 Environment Variables
-
-PrompTea requires a Groq API key.
-
-**Never commit your real API key to GitHub.**
-
-Example:
+# 🔐 Environment Variables
 
 ```env
 GROQ_API_KEY=your_groq_api_key
 ```
 
-The `.env` file should be included in `.gitignore`.
+Never commit your API key.
 
 ---
 
-## 🔄 End-to-End Workflow
+# 🌐 Backend API
 
-A typical PrompTea session looks like:
+## POST `/generate`
 
-```text
-1. User enters rough prompt
-              ↓
-2. Validation
-              ↓
-3. Complexity analysis
-              ↓
-4. Gap analysis
-              ↓
-5. Clarification, if required
-              ↓
-6. User provides missing information
-              ↓
-7. Context construction
-              ↓
-8. Technique selection
-              ↓
-9. Strategy generation
-              ↓
-10. Prompt refinement
-              ↓
-11. Critic evaluation
-              ↓
-12. Refinement retry, if necessary
-              ↓
-13. Cost optimization
-              ↓
-14. Output simulation
-              ↓
-15. Quality scorecard
-              ↓
-16. Explainability
-              ↓
-17. Final refined prompt
+Starts a new prompt refinement session.
+
+Example Request
+
+```json
+{
+  "prompt": "Explain Machine Learning",
+  "level": "Beginner",
+  "personalization_presets": [
+    "examples",
+    "bullet_points"
+  ],
+  "personalization_custom": "Use simple analogies."
+}
+```
+
+Possible Responses
+
+- Complete refinement
+- Clarification required
+- Validation stopped
+
+---
+
+## POST `/continue`
+
+Continues the workflow after Gap Analysis.
+
+Example
+
+```json
+{
+  "state": {...},
+  "answers": {
+    "Audience": "College students",
+    "Tone": "Friendly"
+  }
+}
 ```
 
 ---
 
-## 🌐 Live Demo
+# 🔄 End-to-End Workflow
 
-🚀 **Try PrompTea:** https://prompteafinal.netlify.app/
-
-⚙️ **Backend API:** https://promptea-final.onrender.com/
+```text
+User Prompt
+      ↓
+Validation
+      ↓
+Complexity Analysis
+      ↓
+Gap Analysis
+      ↓
+Clarification (if needed)
+      ↓
+User Answers
+      ↓
+Context Building
+      ↓
+Technique Selection
+      ↓
+Strategy Generation
+      ↓
+Prompt Refinement
+      ↓
+Critic Evaluation
+      ↓
+Retry (if required)
+      ↓
+Cost Optimization
+      ↓
+Prompt Simulation
+      ↓
+Quality Scorecard
+      ↓
+Explainability
+      ↓
+☕ FINAL BREW
+```
 
 ---
-
-## 📸 Screenshots
 
 ## 📸 Screenshots
 
@@ -582,14 +748,46 @@ A typical PrompTea session looks like:
 
 ![History](frontend/src/screenshots/history.png)
 
----
-
-## 👥 Team
-git push n pull.
-Built with love <3
 
 ---
 
-## 📄 License
+# 🌐 Live Demo
+
+### 🚀 Frontend
+
+https://prompteafinal.netlify.app/
+
+### ⚙️ Backend API
+
+https://promptea-final.onrender.com/
+
+---
+
+# 🚀 Future Improvements
+
+Potential enhancements include:
+
+- 🌍 Multi-language prompt engineering
+- 📄 PDF and document prompt extraction
+- 🧠 Prompt templates
+- 🔄 Version comparison
+- 📤 Export refined prompts
+- 📊 Prompt analytics dashboard
+- 🔑 User authentication
+- ☁️ Cloud prompt history
+- 🤝 Team collaboration
+- 🧩 Additional prompt engineering techniques
+
+---
+
+# 👥 Team
+
+Built with ❤️ by git push n pull.
+
+---
+
+# 📄 License
 
 This project was developed for academic purposes.
+
+Feel free to fork, learn from, and build upon it with proper attribution.
