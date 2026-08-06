@@ -36,6 +36,8 @@ def context_node(state: PromptState):
         state["complexity"],
         state["gap"],
         state.get("answers", {}),
+        state.get("level", "Intermediate"),
+        state.get("personalization", ""),
     )
     return state
 

@@ -8,12 +8,16 @@ def context_agent(
     prompt: str,
     complexity: dict,
     gap: dict,
-    answers: dict
+    answers: dict,
+    level: str = "Intermediate",
+    personalization: str = "",
 ):
     """
     Constructs a structured context package from the
     original prompt, complexity analysis, gap analysis,
-    and user clarification answers.
+    user clarification answers, the user's stated knowledge
+    level, and any personalization instructions the user
+    supplied for how the response should be delivered.
     """
 
     user_input = f"""
@@ -28,6 +32,12 @@ Gap Analysis:
 
 Clarification Answers:
 {json.dumps(answers, indent=2)}
+
+User Knowledge Level:
+{level}
+
+User Personalization Instructions (explicit, verbatim from the user):
+{personalization if personalization else "None provided."}
 """
 
     result = ask_llm_json(
@@ -41,6 +51,8 @@ Clarification Answers:
             "task_type": "",
             "goal": "",
             "context": {},
+            "user_level": level,
+            "personalization": personalization,
             "requirements": [],
             "available_information": [],
             "missing_information": [],

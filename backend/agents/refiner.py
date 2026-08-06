@@ -13,6 +13,12 @@ def refiner_agent(state):
 Original Prompt:
 {state["original_prompt"]}
 
+User Knowledge Level:
+{state.get("level", "Intermediate")}
+
+User Personalization Instructions (explicit, verbatim from the user):
+{state.get("personalization") or "None provided."}
+
 Clarification Answers:
 {json.dumps(state.get("answers", {}), indent=2)}
 

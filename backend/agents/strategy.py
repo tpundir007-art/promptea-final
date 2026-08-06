@@ -10,6 +10,15 @@ Detected Techniques:
 
 Original Prompt:
 {state["original_prompt"]}
+
+User Knowledge Level:
+{state.get("level", "Intermediate")}
+
+User Personalization Instructions (explicit, verbatim from the user):
+{state.get("personalization") or "None provided."}
+
+Context Package:
+{state.get("context", {})}
 """
 
     state["strategy"] = ask_llm_json(

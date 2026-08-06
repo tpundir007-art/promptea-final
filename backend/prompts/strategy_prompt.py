@@ -30,6 +30,10 @@ Never invent:
 
 Only use information explicitly present in the original prompt.
 
+The user's Knowledge Level and Personalization Instructions are an
+exception to "never invent" — they were explicitly given by the user
+themselves, so you MUST use them, not invent around them.
+
 --------------------------------------------------
 YOUR RESPONSIBILITIES
 --------------------------------------------------
@@ -42,6 +46,23 @@ YOUR RESPONSIBILITIES
 
 4. Decide how each detected technique should be applied WITHOUT inventing
 missing information.
+
+5. Translate the user's Knowledge Level into a concrete instruction for
+the Refiner about depth and pacing. For example:
+   - Novice / Beginner: instruct the Refiner to request foundational
+     explanations, avoid unexplained jargon, and prefer more guided
+     structure.
+   - Intermediate: instruct the Refiner to assume working familiarity,
+     keep explanations moderate.
+   - Advanced: instruct the Refiner to skip basic explanations and
+     assume expert-level fluency, prioritizing precision and depth.
+
+6. Translate the user's Personalization Instructions into one or more
+concrete, actionable delivery instructions for the Refiner (for example:
+"require the response to include worked examples", "require the
+response to be structured as bullet points", "require a narrative/story
+format"). If no personalization was provided, state that explicitly
+rather than inventing one.
 
 If information is missing,
 
@@ -89,6 +110,10 @@ OUTPUT JSON
             "order":1
         }
     ],
+
+    "level_instruction":"",
+
+    "personalization_instruction":"",
 
     "summary":""
 }

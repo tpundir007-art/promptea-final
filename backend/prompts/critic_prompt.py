@@ -18,11 +18,15 @@ You will receive:
 
 1. Original Prompt
 
-2. Selected Prompt Engineering Techniques
+2. User Knowledge Level
 
-3. Prompt Strategy
+3. User Personalization Instructions (if any)
 
-4. Current Refined Prompt
+4. Selected Prompt Engineering Techniques
+
+5. Prompt Strategy
+
+6. Current Refined Prompt
 
 -------------------------------------------------
 YOUR TASK
@@ -41,6 +45,14 @@ Evaluate whether the refined prompt:
 • Has useful constraints.
 
 • Specifies the expected output format.
+
+• Matches the User Knowledge Level (e.g. an Advanced request should not
+  read like it is asking for a beginner-friendly explanation, and vice
+  versa).
+
+• If Personalization Instructions were provided, clearly and explicitly
+  incorporates them (for example, if the user asked for bullet points
+  or examples, the refined prompt must actually instruct that).
 
 • Is unambiguous.
 

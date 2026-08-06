@@ -7,6 +7,7 @@ class PromptState(TypedDict):
     # ==========================
     original_prompt: str
     level: str
+    personalization: str
 
     # ==========================
     # Validation
