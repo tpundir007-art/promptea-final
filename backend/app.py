@@ -7,7 +7,19 @@ from graph.workflow import pre_gap_workflow, post_gap_workflow
 from graph.state import PromptState
 
 app = Flask(__name__)
-CORS(app)
+
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://prompteafinal.netlify.app"
+            ]
+        }
+    },
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"]
+)
 
 
 # --------------------------------------------------------------------
