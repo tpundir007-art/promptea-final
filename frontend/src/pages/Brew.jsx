@@ -12,7 +12,10 @@ import Simulator from "../components/Simulator";
 import SkillModal from "../components/SkillModal";
 import ClarificationModal from "../components/ClarificationModal";
 
-const API = "https://promptea-final.onrender.com/";
+const API = (
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:5000"
+).replace(/\/+$/, "");
 const TOTAL_STEPS = 12;
 
 const obj = (v) => {
