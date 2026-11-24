@@ -1,6 +1,5 @@
-import json
 
-from helpers import ask_llm
+from helpers import ask_llm, compact
 from prompts.refiner_prompt import SYSTEM_PROMPT
 
 
@@ -20,10 +19,10 @@ User Personalization Instructions (explicit, verbatim from the user):
 {state.get("personalization") or "None provided."}
 
 Clarification Answers:
-{json.dumps(state.get("answers", {}), indent=2)}
+{compact(state.get("answers", {}))}
 
 Context Package:
-{json.dumps(state.get("context", {}), indent=2)}
+{compact(state.get("context", {}))}
 
 Detected Techniques:
 {", ".join(state.get("selected_techniques", []))}
@@ -32,13 +31,13 @@ Technique Reasoning:
 {state.get("technique_reasoning", "")}
 
 Refinement Strategy:
-{json.dumps(state.get("strategy", {}), indent=2)}
+{compact(state.get("strategy", {}))}
 
 Current Prompt:
 {current}
 
 Critic Feedback:
-{json.dumps(state.get("critique", {}), indent=2)}
+{compact(state.get("critique", {}))}
 
 Refinement Round:
 {state.get("retry_count", 0)}

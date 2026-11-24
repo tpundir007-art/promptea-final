@@ -1,40 +1,105 @@
-from unittest import result
+import logging
+import threading
+import time
+import uuid
+from collections import defaultdict, deque
 
-from flask import Flask, request, jsonify
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from graph.workflow import pre_gap_workflow, post_gap_workflow
+from config import Config
 from graph.state import PromptState
+from graph.workflow import post_gap_workflow, pre_gap_workflow
+from helpers import LLMError, sanitize_text
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger("promptea")
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 256 * 1024  # reject oversized bodies early
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # real client IP behind Render's proxy
 
 CORS(
     app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://prompteafinal.netlify.app"
-            ]
-        }
-    },
+    resources={r"/*": {"origins": Config.ALLOWED_ORIGINS}},
     methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type"]
+    allow_headers=["Content-Type"],
+    max_age=600,
 )
 
+LEVELS = {"Novice", "Beginner", "Intermediate", "Advanced"}
+_signer = URLSafeTimedSerializer(Config.SECRET_KEY, salt="promptea-pending-v1")
 
-# --------------------------------------------------------------------
-# Canonical personalization presets.
-#
-# Each key maps to a FIXED, hard-coded instruction. This is deliberate:
-# for the common cases, we don't want the LLM to re-interpret a checkbox
-# label's wording every single time (that reintroduces the phrasing
-# inconsistency free text has). The frontend sends the KEY (e.g.
-# "examples"), not the display label, and we always turn it into the
-# exact same instruction text here.
-#
-# Keep these keys in sync with whatever values the frontend checkboxes
-# submit.
-# --------------------------------------------------------------------
+
+# ------------------------------------------------------------------
+# Security / error plumbing
+# ------------------------------------------------------------------
+_hits = defaultdict(deque)
+_hits_lock = threading.Lock()
+
+
+def rate_limited(ip: str) -> bool:
+    """Sliding-window limiter (per worker process)."""
+    now = time.monotonic()
+    with _hits_lock:
+        q = _hits[ip]
+        while q and now - q[0] > Config.RATE_WINDOW:
+            q.popleft()
+        if len(q) >= Config.RATE_LIMIT:
+            return True
+        q.append(now)
+        if len(_hits) > 5000:  # keep memory bounded
+            for k in [k for k, v in _hits.items() if not v]:
+                del _hits[k]
+        return False
+
+
+def fail(message: str, status: int):
+    return jsonify({"error": message, "request_id": getattr(g, "rid", "")}), status
+
+
+@app.before_request
+def _before():
+    g.rid = uuid.uuid4().hex[:8]
+    if request.method == "POST" and rate_limited(request.remote_addr or "?"):
+        return fail("Too many requests. Please wait a minute and try again.", 429)
+
+
+@app.after_request
+def _security_headers(resp):
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["Cache-Control"] = "no-store"
+    resp.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    return resp
+
+
+@app.errorhandler(LLMError)
+def _llm_error(e):
+    log.error("[%s] LLM error: %s", g.get("rid"), e)
+    return fail(str(e), e.status)
+
+
+@app.errorhandler(HTTPException)
+def _http_error(e):
+    msg = "Request too large." if e.code == 413 else (e.description or e.name)
+    return fail(msg, e.code or 500)
+
+
+@app.errorhandler(Exception)
+def _unhandled(e):
+    # Full details go to the server log only - never to the client.
+    log.exception("[%s] Unhandled error", g.get("rid"))
+    return fail("Something went wrong while brewing. Please try again.", 500)
+
+
+# ------------------------------------------------------------------
+# Personalization
+# ------------------------------------------------------------------
 PERSONALIZATION_PRESETS = {
     "examples": (
         "Include real-world examples to illustrate the explanation."
@@ -75,14 +140,15 @@ def build_personalization_string(data: dict) -> str:
     breaking prompt generation.
     """
     preset_keys = data.get("personalization_presets", [])
-    custom_text = str(data.get("personalization_custom", "")).strip()
+    custom_text = sanitize_text(data.get("personalization_custom", ""), 2000)
 
     # Legacy path: a single plain string was sent instead.
     if not preset_keys and not custom_text and "personalization" in data:
-        return str(data.get("personalization", "")).strip()
+        return sanitize_text(data.get("personalization", ""), MAX_PERSONALIZATION_LENGTH)
 
     if not isinstance(preset_keys, list):
         preset_keys = []
+    preset_keys = [k for k in preset_keys if isinstance(k, str)]
 
     if len(custom_text) > MAX_CUSTOM_PERSONALIZATION_LENGTH:
         raise ValueError(
@@ -233,69 +299,103 @@ def response_from_state(result, needs_clarification=False):
         "iterations": clean_state["retry_count"],
 
         # Only send our explicitly known state fields for resuming.
-        "pending_state": clean_state if needs_clarification else None,
+        "pending_state": pack_state(clean_state) if needs_clarification else None,
     }
+
+
+
+# ------------------------------------------------------------------
+# Signed pending state (prevents clients from forging/tampering state)
+# ------------------------------------------------------------------
+def pack_state(state: dict) -> str:
+    return _signer.dumps(state)
+
+
+def unpack_state(token):
+    if not isinstance(token, str) or len(token) > 200_000:
+        return None
+    try:
+        state = _signer.loads(token, max_age=Config.PENDING_TTL)
+    except (BadSignature, SignatureExpired):
+        return None
+    return state if isinstance(state, dict) else None
+
+
+def clean_answers(answers) -> dict:
+    if not isinstance(answers, dict):
+        return {}
+    out = {}
+    for k, v in list(answers.items())[: Config.MAX_ANSWERS]:
+        if isinstance(v, (list, tuple)):
+            v = ", ".join(str(x) for x in v)
+        out[sanitize_text(k, 100)] = sanitize_text(v, Config.MAX_ANSWER_CHARS)
+    return out
 
 
 @app.route("/")
 def home():
-    return jsonify({"message": "PrompTea Backend Running ☕🍒"})
+    return jsonify({"message": "PrompTea Backend Running"})
+
+
+@app.route("/health")
+def health():
+    return jsonify({"ok": True})
 
 
 @app.route("/generate", methods=["POST"])
 def generate():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return fail("Request body must be valid JSON.", 400)
+
+    prompt = sanitize_text(data.get("prompt"), Config.MAX_PROMPT_CHARS + 1)
+    if not prompt:
+        return fail("Prompt cannot be empty.", 400)
+    if len(prompt) > Config.MAX_PROMPT_CHARS:
+        return fail(f"Prompt is too long (max {Config.MAX_PROMPT_CHARS} characters).", 400)
+
+    level = data.get("level")
+    level = level if level in LEVELS else "Intermediate"
+
     try:
-        data = request.get_json(silent=True) or {}
-        original_prompt = str(data.get("prompt", "")).strip()
-        level = data.get("level", "Intermediate")
+        personalization = build_personalization_string(data)
+    except ValueError as ve:
+        return fail(str(ve), 400)
 
-        if not original_prompt:
-            return jsonify({"error": "Prompt cannot be empty."}), 400
+    result = pre_gap_workflow.invoke(empty_state(prompt, level, personalization))
 
-        try:
-            personalization = build_personalization_string(data)
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
+    if not (result.get("validation") or {}).get("continue_pipeline", True):
+        return jsonify(response_from_state(result)), 200
 
-        state: PromptState = empty_state(original_prompt, level, personalization)
-        result = pre_gap_workflow.invoke(state)
+    if (result.get("gap") or {}).get("needs_clarification"):
+        return jsonify(response_from_state(result, True)), 200
 
-        if not result.get("validation", {}).get("continue_pipeline", True):
-            return jsonify(response_from_state(result)), 200
-
-        gap = result.get("gap") or {}
-        needs_clarification = bool(gap.get("needs_clarification"))
-
-        if needs_clarification:
-            return jsonify(response_from_state(result, True)), 200
-
-        final = post_gap_workflow.invoke(result)
-        return jsonify(response_from_state(final)), 200
-
-    except Exception as e:
-        app.logger.exception("PrompTea /generate failed")
-        return jsonify({"error": str(e)}), 500
+    return jsonify(response_from_state(post_gap_workflow.invoke(result))), 200
 
 
 @app.route("/continue", methods=["POST"])
 def continue_brewing():
-    try:
-        data = request.get_json(silent=True) or {}
-        state = data.get("state")
-        answers = data.get("answers", {})
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return fail("Request body must be valid JSON.", 400)
 
-        if not isinstance(state, dict):
-            return jsonify({"error": "A pending brewing state is required."}), 400
+    state = unpack_state(data.get("state"))
+    if state is None:
+        return fail("This brew has expired or is invalid. Please start again.", 400)
 
-        state["answers"] = answers if isinstance(answers, dict) else {}
-        final = post_gap_workflow.invoke(state)
+    # Only accept the fields we issued; re-apply server-side limits.
+    base = empty_state(
+        sanitize_text(state.get("original_prompt"), Config.MAX_PROMPT_CHARS),
+        state.get("level") if state.get("level") in LEVELS else "Intermediate",
+        sanitize_text(state.get("personalization"), MAX_PERSONALIZATION_LENGTH),
+    )
+    for key in ("validation", "complexity", "gap"):
+        if isinstance(state.get(key), dict):
+            base[key] = state[key]
+    base["answers"] = clean_answers(data.get("answers"))
 
-        return jsonify(response_from_state(final)), 200
-
-    except Exception as e:
-        app.logger.exception("PrompTea /continue failed")
-        return jsonify({"error": str(e)}), 500
+    return jsonify(response_from_state(post_gap_workflow.invoke(base))), 200
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False, port=5000)  # production: gunicorn app:app

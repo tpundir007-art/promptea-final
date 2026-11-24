@@ -1,6 +1,5 @@
-import json
 
-from helpers import ask_llm_json
+from helpers import ask_llm_json, compact
 from prompts.simulator_prompt import SIMULATOR_PROMPT
 
 
@@ -18,7 +17,7 @@ Original Prompt:
 {original_prompt}
 
 Context Package:
-{json.dumps(context, indent=2)}
+{compact(context)}
 
 Optimized Prompt:
 {optimized_prompt}

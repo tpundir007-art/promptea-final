@@ -1,4 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from langgraph.graph import StateGraph, END
+
+from config import Config
 
 from graph.state import PromptState
 from agents.validator import validation_agent
@@ -20,32 +24,32 @@ def validation_node(state: PromptState):
     return state
 
 
-def complexity_node(state: PromptState):
-    state["complexity"] = complexity_agent(state["original_prompt"])
-    return state
-
-
-def gap_node(state: PromptState):
-    state["gap"] = gap_agent(state["original_prompt"])
+def analysis_node(state: PromptState):
+    """Complexity and gap analysis are independent -> run them in parallel."""
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        c = pool.submit(complexity_agent, state["original_prompt"])
+        g = pool.submit(gap_agent, state["original_prompt"])
+        state["complexity"], state["gap"] = c.result(), g.result()
     return state
 
 
 def context_node(state: PromptState):
-    state["context"] = context_agent(
-        state["original_prompt"],
-        state["complexity"],
-        state["gap"],
-        state.get("answers", {}),
-        state.get("level", "Intermediate"),
-        state.get("personalization", ""),
-    )
-    return state
-
-
-def technique_node(state: PromptState):
-    result = technique_agent(state["original_prompt"]) or {}
-    state["selected_techniques"] = result.get("selected_techniques", [])
-    state["technique_reasoning"] = result.get("technique_reasoning", "")
+    """Context and technique selection are independent -> run in parallel."""
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        c = pool.submit(
+            context_agent,
+            state["original_prompt"],
+            state.get("complexity", {}),
+            state.get("gap", {}),
+            state.get("answers", {}),
+            state.get("level", "Intermediate"),
+            state.get("personalization", ""),
+        )
+        t = pool.submit(technique_agent, state["original_prompt"])
+        state["context"] = c.result()
+        result = t.result()
+    state["selected_techniques"] = result["selected_techniques"]
+    state["technique_reasoning"] = result["technique_reasoning"]
     return state
 
 
@@ -65,7 +69,7 @@ def critic_router(state: PromptState):
     critique = state.get("critique") or {}
     decision = str(critique.get("decision", "accept")).lower()
 
-    if decision == "refine" and state.get("retry_count", 0) < 3:
+    if decision == "refine" and state.get("retry_count", 0) < Config.MAX_ITERATIONS:
         return "Retry"
 
     return "Cost"
@@ -102,7 +106,7 @@ def simulator_node(state: PromptState):
     state["simulator"] = simulator_agent(
         state["original_prompt"],
         state["context"],
-        state["cost"].get("optimized_prompt", state["refined_prompt"]),
+        (state.get("cost") or {}).get("optimized_prompt") or state["refined_prompt"],
     )
     return state
 
@@ -116,25 +120,23 @@ def explainability_node(state: PromptState):
 
 
 def validation_router(state: PromptState):
-    if not state["validation"].get("continue_pipeline", True):
+    if not (state.get("validation") or {}).get("continue_pipeline", True):
         return "END"
-    return "Complexity"
+    return "Analysis"
 
 
 def build_pre_gap_workflow():
     builder = StateGraph(PromptState)
     builder.add_node("Validation", validation_node)
-    builder.add_node("Complexity", complexity_node)
-    builder.add_node("Gap", gap_node)
+    builder.add_node("Analysis", analysis_node)
 
     builder.set_entry_point("Validation")
     builder.add_conditional_edges(
         "Validation",
         validation_router,
-        {"Complexity": "Complexity", "END": END},
+        {"Analysis": "Analysis", "END": END},
     )
-    builder.add_edge("Complexity", "Gap")
-    builder.add_edge("Gap", END)
+    builder.add_edge("Analysis", END)
     return builder.compile()
 
 
@@ -142,7 +144,6 @@ def build_post_gap_workflow():
     builder = StateGraph(PromptState)
 
     builder.add_node("Context", context_node)
-    builder.add_node("Technique", technique_node)
     builder.add_node("Strategy", strategy_node)
     builder.add_node("Refiner", refiner_node)
     builder.add_node("Critic", critic_node)
@@ -153,8 +154,7 @@ def build_post_gap_workflow():
     builder.add_node("Explainability", explainability_node)
 
     builder.set_entry_point("Context")
-    builder.add_edge("Context", "Technique")
-    builder.add_edge("Technique", "Strategy")
+    builder.add_edge("Context", "Strategy")
     builder.add_edge("Strategy", "Refiner")
     builder.add_edge("Refiner", "Critic")
     builder.add_conditional_edges(

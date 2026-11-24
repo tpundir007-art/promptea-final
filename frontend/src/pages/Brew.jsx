@@ -30,6 +30,40 @@ function errorMessage(response, data) {
   return "The brewing service returned an unexpected response.";
 }
 
+// One place for network, timeout, non-JSON and HTTP-error handling.
+async function api(path, body, timeoutMs = 240000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  let response;
+  try {
+    response = await fetch(`${API}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    throw new Error(
+      e.name === "AbortError"
+        ? "This is taking too long. The server may be waking up - please try again in a moment."
+        : "Can't reach the brewing service. Check your connection, or try again in a moment (the server may be waking up)."
+    );
+  } finally {
+    clearTimeout(t);
+  }
+  let data = null;
+  if ((response.headers.get("content-type") || "").includes("application/json")) {
+    try { data = await response.json(); } catch { data = null; }
+  }
+  if (!response.ok || !data) {
+    throw new Error(
+      data ? errorMessage(response, data)
+        : "The brewing service is temporarily unavailable. Please try again shortly."
+    );
+  }
+  return data;
+}
+
 export default function Brew() {
   const [level,setLevel]=useState("Novice");
   const [loading,setLoading]=useState(false);
@@ -86,18 +120,12 @@ export default function Brew() {
     }catch{}
   };
 
-  const callGenerate=async(promptText,personalization)=>{
-    const response=await fetch(`${API}/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-      prompt:promptText.trim(),
-      level,
-      personalization_presets:personalization?.presets||[],
-      personalization_custom:personalization?.custom||"",
-    })});
-    const type=response.headers.get("content-type")||"";
-    const data=type.includes("application/json")?await response.json():{error:"The brewing service returned a webpage instead of JSON. It may be waking up or temporarily unavailable."};
-    if(!response.ok)throw new Error(errorMessage(response,data));
-    return data;
-  };
+  const callGenerate=(promptText,personalization)=>api("/generate",{
+    prompt:promptText.trim(),
+    level,
+    personalization_presets:personalization?.presets||[],
+    personalization_custom:personalization?.custom||"",
+  });
 
   const handleBrew=async(promptText,personalization={presets:[],custom:""})=>{
     if(!promptText?.trim()||loading)return;
@@ -123,13 +151,10 @@ export default function Brew() {
     if(!pending?.state)return;
     setLoading(true);setError("");setPending(null);animate(4);
     try{
-      const response=await fetch(`${API}/continue`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({state:pending.state,answers})});
-      const type=response.headers.get("content-type")||"";
-      const data=type.includes("application/json")?await response.json():{error:"The continuation service returned an unexpected response."};
-      if(!response.ok)throw new Error(errorMessage(response,data));
+      const data=await api("/continue",{state:pending.state,answers});
       stop();setActiveStep(TOTAL_STEPS);
       const item=normalize(data,pending.prompt,pending.personalization);setResult(item);saveHistory(item);playCupSound();
-    }catch(e){setError(e.message||"I couldn't continue the brew.");}
+    }catch(e){stop();setActiveStep(0);setError(e.message||"I couldn't continue the brew.");}
     finally{setLoading(false);}
   };
 

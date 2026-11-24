@@ -1,7 +1,4 @@
 import re
-from unittest import result
-
-from click import prompt
 
 from helpers import ask_llm_json
 from prompts.validator_prompt import SYSTEM_PROMPT, USER_PROMPT
@@ -301,10 +298,15 @@ def validation_agent(state):
 # LLM handles everything else
 # -----------------------------------
 
+    # str.format would choke on braces inside user text, so replace instead
     result = ask_llm_json(
         SYSTEM_PROMPT,
-        USER_PROMPT.format(user_prompt=prompt)
+        USER_PROMPT.replace("{user_prompt}", prompt)
     )
+    if not isinstance(result, dict):
+        result = {}
+    result.setdefault("status", "VALID_PROMPT")
+    result.setdefault("continue_pipeline", True)
 
     # Override obvious educational/task requests
     lower = prompt.lower().strip()
@@ -333,9 +335,5 @@ def validation_agent(state):
         result["status"] = "VALID_PROMPT"
         result["continue_pipeline"] = True
         result["message"] = "Valid prompt detected. Proceeding to refinement."
-
-    print("\n===== VALIDATION RESULT =====")
-    print(result)
-    print("=============================\n")
 
     return result

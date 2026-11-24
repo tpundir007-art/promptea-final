@@ -1,6 +1,5 @@
-import json
 
-from helpers import ask_llm_json
+from helpers import ask_llm_json, compact
 from prompts.context_prompt import CONTEXT_BUILDER_PROMPT
 
 
@@ -25,13 +24,13 @@ Original Prompt:
 {prompt}
 
 Complexity Analysis:
-{json.dumps(complexity, indent=2)}
+{compact(complexity)}
 
 Gap Analysis:
-{json.dumps(gap, indent=2)}
+{compact(gap)}
 
 Clarification Answers:
-{json.dumps(answers, indent=2)}
+{compact(answers)}
 
 User Knowledge Level:
 {level}
